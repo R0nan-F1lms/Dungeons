@@ -8,7 +8,6 @@ const int SCREEN_HEIGHT = 600;
 const int TILE_SIZE = 50;
 const int NUM_TILES_X = SCREEN_WIDTH / TILE_SIZE;
 const int NUM_TILES_Y = SCREEN_HEIGHT / TILE_SIZE;
-// const int COINS_TO_WIN = 15;
 const int MAX_MOBS = 5;           // Maximum number of mobs on the board at all times
 const int TICK_SPEED = 10;        // Every 10 ticks a new mob spawns
 const int WATER_SPAWN_CHANCE = 3; // Chance for water to spawn (out of 10)
@@ -18,8 +17,13 @@ const int AIR_GAIN_RATE = 5;
 const int AIR_LOSS_RATE = 10;       // Rate of air loss per second
 const int DROWN_THRESHOLD = 10;     // Time threshold (in seconds) before player starts drowning
 const int MOB_MOVE_INTERVAL = 1000; // 1000 milliseconds = 1 second
+const int BASE_MOBS_KILLED = 0;
+const string FOOTSTEP_FIRST = "footstep1";
+const string FOOTSTEP_SECOND = "footstep2";
+const string WATER_SOUND_EFFECT = "water";
 const string MOB_MOVE_TIMER = "mob_move_timer";
 timer mob_move;
+int footstepValue;
 
 enum TileType
 {
@@ -28,6 +32,7 @@ enum TileType
     WALL,
     DOOR
 };
+
 enum GameState
 {
     PLAYING,
@@ -53,10 +58,10 @@ struct Player
 {
     int x, y;
     int health;
-    int damage;
     bool has_key;
     int air;
     int mobs_killed;
+    int level;
 };
 
 struct Game
@@ -71,6 +76,7 @@ struct Game
 
 Game game;
 
+void initialize_tiles(Game &game);
 void setup(Game &game);
 void draw_world(Game &game);
 void draw_player(const Game &game);
@@ -86,6 +92,10 @@ void spawn_mobs(Game &game);
 void move_mobs(Game &game);
 void draw_game_over();
 bool is_mob_at(int x, int y, const Game &game);
+void regenerate_world(Game &game);
+// play sounds functions
+music load_music(const string &name, const string &filename);
+void fade_music_in(music data, int times, int ms);
 
 int main()
 {
@@ -130,19 +140,34 @@ int main()
     return 0;
 }
 
-void setup(Game &game)
+void regenerate_world(Game &game)
 {
-    game.player.x = rnd(NUM_TILES_X) * TILE_SIZE;
-    game.player.y = rnd(NUM_TILES_Y) * TILE_SIZE;
-    game.player.health = MAX_HEALTH;
-    game.player.damage = 10;
-    game.player.has_key = false;
-    game.player.air = MAX_AIR;
-    game.player.mobs_killed = 0;
-    game.num_mobs = 0;
-    game.state = PLAYING;
-    game.tick_counter = 0; // Initialize tick counter
+    for (int i = 0; i < NUM_TILES_X; ++i)
+    {
+        for (int j = 0; j < NUM_TILES_Y; ++j)
+        {
+            game.world[i][j].x = i * TILE_SIZE;
+            game.world[i][j].y = j * TILE_SIZE;
+            // Set tile type and traversable attribute
+            int rnd_num = rnd(10); // Generate a random number between 0 and 9
+            if (rnd_num < WATER_SPAWN_CHANCE)
+            {
+                game.world[i][j].type = WATER;
+                game.world[i][j].traversable = true;
+            }
+            else
+            {
+                game.world[i][j].type = GRASS;
+                game.world[i][j].traversable = true;
+            }
+        }
+    }
+}
 
+
+
+void initialize_tiles(Game &game)
+{
     for (int i = 0; i < NUM_TILES_X; ++i)
     {
         for (int j = 0; j < NUM_TILES_Y; ++j)
@@ -176,6 +201,26 @@ void setup(Game &game)
             }
         }
     }
+}
+
+void setup(Game &game)
+{
+    game.player.x = rnd(NUM_TILES_X) * TILE_SIZE;
+    game.player.y = rnd(NUM_TILES_Y) * TILE_SIZE;
+    game.player.health = MAX_HEALTH;
+    game.player.has_key = false;
+    game.player.air = MAX_AIR;
+    game.player.mobs_killed = BASE_MOBS_KILLED;
+    game.player.level = 1;
+    game.num_mobs = 0;
+    game.state = PLAYING;
+    game.tick_counter = 0; // Initialize tick counter
+    load_music("background_music", "./SoundEffects/cinematic-time-lapse.mp3");
+    load_sound_effect(FOOTSTEP_FIRST, "./SoundEffects/footstep1.ogg");
+    load_sound_effect(FOOTSTEP_SECOND, "./SoundEffects/footstep2.ogg");
+   // fade_music_in("background_music", 3, 1000);
+    initialize_tiles(game);
+
     create_timer(MOB_MOVE_TIMER);
     start_timer(MOB_MOVE_TIMER);
     spawn_mobs(game);
@@ -316,7 +361,7 @@ void move_player(Game &game, int dx, int dy)
         {
             if (game.player.air < 0)
             {
-                game.player.health--;
+                game.player.health-=game.player.level*2;
             }
             else
             {
@@ -325,6 +370,20 @@ void move_player(Game &game, int dx, int dy)
         }
         else if (game.world[tile_x][tile_y].type == GRASS)
         {
+            
+            // Play footstep sound alternately
+        if (footstepValue == 0)
+        {
+            play_sound_effect(FOOTSTEP_FIRST);
+            footstepValue = 1;
+            printf("footstep first played");
+        }
+        else
+        {
+            play_sound_effect(FOOTSTEP_SECOND);
+            footstepValue = 0;
+            printf("footstep second played");
+        }
             if (game.player.air < MAX_AIR)
             {
                 game.player.air += AIR_GAIN_RATE;
@@ -335,9 +394,23 @@ void move_player(Game &game, int dx, int dy)
             }
             int x, y;
             game.player.health++;
-        } else if (game.world[tile_x][tile_y].type == DOOR) {
-            game.state = GAME_OVER;
-            printf("Game Over Player won and got into the door at the right time.\n");
+            //stop_sound_effect(FOOTSTEPS);
+        }
+        else if (game.world[tile_x][tile_y].type == DOOR)
+        {
+            if (game.player.level < 3) {
+                // Increment player's level and regenerate the world
+                game.player.level++;
+                game.player.has_key=false; // clearing the players key so they have to get it in the next level.
+                game.player.mobs_killed=BASE_MOBS_KILLED;
+                game.player.health=MAX_HEALTH;
+                game.player.air=MAX_AIR;
+                printf("Leveled up to level: %d", game.player.level);
+                initialize_tiles(game);
+            } else {
+                game.state = GAME_OVER;
+                printf("3 levels completed Game over you win!\n");
+            }
         }
         // Check for mob collision
         for (int i = 0; i < game.num_mobs; ++i)
@@ -347,7 +420,7 @@ void move_player(Game &game, int dx, int dy)
                 // Decrease player's health when colliding with a mob
                 game.player.health -= game.mobs[i].damage;
                 game.player.mobs_killed++;
-                if (game.player.mobs_killed == 5)
+                if (game.player.mobs_killed == game.player.level * 10 / 2) // for level 1 mobs to kill is 5, for leve 2 mobs to kill is 10
                 {
                     game.player.has_key = true;
                 }
@@ -362,6 +435,7 @@ void move_player(Game &game, int dx, int dy)
         }
     }
 }
+
 
 void update_game_state(Game &game)
 {
@@ -382,7 +456,7 @@ void spawn_mobs(Game &game)
         int y_tile = rnd(NUM_TILES_Y); // Random tile y-coordinate
 
         int x = x_tile * TILE_SIZE + TILE_SIZE;
-        int y = y_tile * TILE_SIZE + TILE_SIZE; 
+        int y = y_tile * TILE_SIZE + TILE_SIZE;
 
         // Check if the tile is traversable and not occupied by the player or another mob
         bool traversable = is_traversable(x, y);
@@ -392,14 +466,18 @@ void spawn_mobs(Game &game)
         {
             game.mobs[i].x = x;
             game.mobs[i].y = y;
+            int rnd_dmg_1 = game.player.level * 10;
+            int rnd_dmg_2 = game.player.level * 15;
             // Assign random health and damage to mobs
             game.mobs[i].health = rnd(50, 100);   // Random health between 50 and 100
-            game.mobs[i].damage = rnd(10, 30);    // Random damage between 1 and 3
+
+            game.mobs[i].damage = rnd(rnd_dmg_1, rnd_dmg_2);    // Random damage between 1 and 3
             game.mobs[i].move_direction = rnd(4); // Random initial movement direction
             game.num_mobs++;
         }
     }
 }
+
 bool is_mob_at(int x, int y, const Game &game)
 {
     for (int i = 0; i < game.num_mobs; ++i)
@@ -456,7 +534,6 @@ void move_mobs(Game &game)
         reset_timer(MOB_MOVE_TIMER);
     }
 }
-
 
 void draw_game_over()
 {
