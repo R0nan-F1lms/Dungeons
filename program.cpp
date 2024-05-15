@@ -8,7 +8,7 @@ const int SCREEN_HEIGHT = 600;
 const int TILE_SIZE = 50;
 const int NUM_TILES_X = SCREEN_WIDTH / TILE_SIZE;
 const int NUM_TILES_Y = SCREEN_HEIGHT / TILE_SIZE;
-const int MAX_MOBS = 5;           // Maximum number of mobs on the board at all times
+const int MAX_MOBS = 6;           // Maximum number of mobs on the board at all times
 const int TICK_SPEED = 10;        // Every 10 ticks a new mob spawns
 const int WATER_SPAWN_CHANCE = 3; // Chance for water to spawn (out of 10)
 const int MAX_AIR = 100;          // Maximum air the player can have
@@ -393,7 +393,11 @@ void move_player(Game &game, int dx, int dy)
                 printf("player air is max %d\n", game.player.air);
             }
             int x, y;
+            if (game.player.health < MAX_HEALTH) {
             game.player.health++;
+            } else {
+                printf("Player is at max health");
+            }
             //stop_sound_effect(FOOTSTEPS);
         }
         else if (game.world[tile_x][tile_y].type == DOOR)
