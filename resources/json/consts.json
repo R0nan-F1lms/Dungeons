@@ -2,12 +2,6 @@
     "SCREEN_WIDTH": 800,
     "SCREEN_HEIGHT": 600,
     "TILE_SIZE": 50,
-    "NUM_TILES_X": {
-        "calculation": "SCREEN_WIDTH / TILE_SIZE"
-    },
-    "NUM_TILES_Y": {
-        "calculation": "SCREEN_HEIGHT / TILE_SIZE"
-    },
     "MAX_MOBS": 6,
     "TICK_SPEED": 10,
     "WATER_SPAWN_CHANCE": 3,
