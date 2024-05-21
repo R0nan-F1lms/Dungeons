@@ -78,16 +78,12 @@ struct Player
 struct Game
 {
     Player player;
-    
     Tile** world;  // Change to pointer to pointer
     Mob* mobs;
     int num_mobs;
     GameState state;
     int tick_counter; // Counter for tick system
 };
-
-
-
 
 void initialize_tiles(const Para &p, Game &game);
 void setup(const Para &p, Game &game);
@@ -111,6 +107,47 @@ void load_constants_from_json(Para &p, const string& filename);
 // play sounds functions
 // music load_music(const string &name, const string &filename);
 // void fade_music_in(music data, int times, int ms);
+
+void save_map_to_json(const Para &p, const Game &game, const string &filename)
+{
+    // Create a JSON object to hold the map data
+    json map_json = create_json();
+
+    // Create a vector to hold the rows of tiles as JSON objects
+    vector<json> tile_rows;
+
+    // Iterate through the tiles and store their data in the vector
+    for (int i = 0; i < p.NUM_TILES_X; ++i)
+    {
+        // Create a vector to represent the current row
+        vector<json> tile_row;
+
+        for (int j = 0; j < p.NUM_TILES_Y; ++j)
+        {
+            // Create a JSON object for the current tile
+            json tile_json = create_json();
+
+            // Store the tile type and traversable status
+            json_set_number(tile_json, "type", game.world[i][j].type);
+            json_set_bool(tile_json, "traversable", game.world[i][j].traversable);
+
+            // Add the tile JSON object to the current row vector
+            tile_row.push_back(tile_json);
+        }
+
+        // Add the current row vector to the rows vector as a JSON array
+        json row_json = create_json();
+        json_set_array(row_json, "row", tile_row);
+        tile_rows.push_back(row_json);
+    }
+
+    // Add the rows vector to the map JSON object as a JSON array
+    json_set_array(map_json, "tiles", tile_rows);
+
+    // Save the JSON object to a file
+    json_to_file(map_json, filename.c_str());
+}
+
 
 int main()
 {
@@ -301,6 +338,7 @@ void initialize_tiles(const Para &p, Game &game)
             }
         }
     }
+    save_map_to_json(p, game, "map.json");
 }
 
 void setup(const Para &p, Game &game)
