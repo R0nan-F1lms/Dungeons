@@ -1,0 +1,25 @@
+{
+    "SCREEN_WIDTH": 800,
+    "SCREEN_HEIGHT": 600,
+    "TILE_SIZE": 50,
+    "NUM_TILES_X": {
+        "calculation": "SCREEN_WIDTH / TILE_SIZE"
+    },
+    "NUM_TILES_Y": {
+        "calculation": "SCREEN_HEIGHT / TILE_SIZE"
+    },
+    "MAX_MOBS": 6,
+    "TICK_SPEED": 10,
+    "WATER_SPAWN_CHANCE": 3,
+    "MAX_AIR": 100,
+    "MAX_HEALTH": 100,
+    "AIR_GAIN_RATE": 5,
+    "AIR_LOSS_RATE": 10,
+    "DROWN_THRESHOLD": 10,
+    "MOB_MOVE_INTERVAL": 1000,
+    "BASE_MOBS_KILLED": 0,
+    "FOOTSTEP_FIRST": "footstep1",
+    "FOOTSTEP_SECOND": "footstep2",
+    "WATER_SOUND_EFFECT": "water",
+    "MOB_MOVE_TIMER": "mob_move_timer"
+}
