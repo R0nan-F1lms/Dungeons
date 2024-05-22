@@ -517,7 +517,7 @@ void handle_input(const Para &p, Game &game)
             game.state = GAME_OVER;
             draw_game_over();
         }
-        else if (key_typed(NUM_0_KEY))
+        else if (key_typed(RIGHT_CTRL_KEY) && key_typed(E_KEY) || key_typed(LEFT_CTRL_KEY) && key_typed(E_KEY))
         {
             printf("Entered Map Edit Mode\n\nEditing the map");
             initialize_tiles(game.map, p, game);
